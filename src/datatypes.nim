@@ -7,21 +7,36 @@ const MaxMem* = 0xFFFF'u16
 
 type
   RegisterV* = range['0'..'F']
+  Stack*     = object
+    data: array[16, uint16]
+    len:  uint8                     # Stack Pointer. Point to the top level of the stack
 
   Cpu* = object
     memory*: array[MaxMem+1, byte]  # Chip-8 is capable of addressing 4096 bytes of RAM
                                     # The first 512 bytes are reserved to the original interpreter
     V*: array[RegisterV, uint8]     # Chip-8 has 16 registers from V0 to VF
     I*: uint16                      # memory address register
-    stack*: array[16, uint16]
-    sp*: uint8                      # Stack pointer. Point to the top level of the stack
+    pc*: uint16                     # Program Counter, currently executing address
+    stack*: Stack                   # Stack + Stack pointer
     delay_timer*: uint8
     sound_timer*: uint8
-    pc*: uint16                     # Program Counter, currently executing address
 
 proc toRegisterV*(id: range[0x0 .. 0xF]): RegisterV {.inline.} =
   # Convert a register identifier to the matching Register
   char(ord('0') + id)
+
+proc pop*(s: var Stack): uint16 {.inline, noSideEffect.}=
+  if unlikely(s.len == 0):
+    raise newException(StackOverflowError, "Fatal - stack underflow: trying to pop an empty stack")
+  dec s.len
+  result = s.data[s.len]
+  s.data[s.len] = 0
+
+proc push*(s: var Stack, v: uint16) {.inline, noSideEffect.}=
+  if unlikely(s.len == 16):
+    raise newException(StackOverflowError, "Fatal: stack is at full capacity")
+  s.data[s.len] = v
+  inc s.len
 
 ##############################   Cpu   #########################################
 
@@ -74,6 +89,9 @@ type
 # (x: 0, y:31)             (x:63, y:31) #
 
 # So data is stored in row-major order: the column (x) changes the fastest
+{.experimental.}
+proc `destroy=`*(s: SurfacePtr or WindowPtr or RendererPtr or TexturePtr) =
+  destroy s
 
 proc `[]`*(pxs: Pixels, x, y: Someinteger): Pixel {.noSideEffect, inline.}=
   pxs.data[y * Width + x]

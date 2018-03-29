@@ -1,7 +1,7 @@
 # Copyright (c) 2018 Mamy André-Ratsimbazafy
 # Distributed under the Apache v2 License (license terms are at http://www.apache.org/licenses/LICENSE-2.0).
 
-import ./datatypes, strutils
+import ./datatypes, ./display, strutils
 
 const
   StartProg = 0x200'u16 # The first 512 bytes are reserved for the interpreter
@@ -110,16 +110,20 @@ proc decode(opcode: Opcode): Instruction {.noSideEffect.} =
 
   # Templates to avoid copy paste
   template fatal() =
-    raise newException(IOError, "Fatal: unknown instruction: " & $opcode.word.toHex)
+    raise newException(KeyError, "Fatal: unknown instruction: " & $opcode.word.toHex)
 
   template check_lo(mask: byte) =
     if unlikely((opcode.bytes.lo and mask) != 0x00):
       fatal()
 
+  template isEven(x: SomeInteger): bool =
+    (x and 1) == 0
+
   # Note: Nim will auto check that we assign to the proper Kind
   template setMemAddr(Kind: InstructionKind) =
     result.kind = Kind
     result.memaddr = opcode.word and 0x0FFF
+    assert result.memaddr.isEven, "Incorrect address."
 
   template setRegVal(Kind: InstructionKind) =
     result.kind = Kind
@@ -231,7 +235,8 @@ iterator unpack(sprite_line: byte): tuple[idx: uint8, pixSet: bool] {.noSideEffe
   yield (6'u8, bool((sprite_line and 0b00000010) shr 1))
   yield (7'u8, bool( sprite_line and 0b00000001))
 
-proc draw_dxyn(cpu: var CPU, pixels: var Pixels, ins: Instruction) {.noSideEffect.} =
+{.this: self.}
+proc draw_dxyn(self: var GameState, ins: Instruction) {.noSideEffect.} =
   # Draw N height sprite at position VX and VY. VF = 1 if pixels are unset (1 xor 1)
   # Data is taken from address starting at I
 
@@ -247,10 +252,24 @@ proc draw_dxyn(cpu: var CPU, pixels: var Pixels, ins: Instruction) {.noSideEffec
         offsetX = cpu.V[ins.draw_vx]
         col = offsetX + idx
       if pix and col < Width.uint8: # Don't go past the screen
-        if pixels[row, col].color == White:
+        if video[row, col].color == White:
           # if a pixel is already white, it is unset and VF "detects a collision"
           cpu.V['F'] = 1
-        pixels[row, col].color = pixels[row, col].color xor White
+        video[row, col].color = video[row, col].color xor White
+
+# proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
+#   template next() =
+#     # Next instruction is 2 bytes away
+#     inc cpu.pc, 2
+
+
+#   case ins.kind:
+#   of Clr: clearScreen()
+#   of Ret: cpu.pc = cpu.stack.pop; next()
+#   of Jump: cpu.pc = ins.memaddr
+#   of Call: cpu.stack.push cpu.pc; cpu.pc = ins.memaddr
+
+
 
 
 
