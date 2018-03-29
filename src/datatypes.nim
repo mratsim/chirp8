@@ -19,6 +19,10 @@ type
     sound_timer*: uint8
     pc*: uint16                     # Program Counter, currently executing address
 
+proc toRegisterV*(id: range[0x0 .. 0xF]): RegisterV {.inline.} =
+  # Convert a register identifier to the matching Register
+  char(ord('0') + id)
+
 ##############################   Cpu   #########################################
 
 ############################## Display #########################################
