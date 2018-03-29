@@ -3,17 +3,21 @@
 
 ##############################   Cpu   #########################################
 
+const MaxMem* = 0xFFFF'u16
+
 type
+  RegisterV* = range['0'..'F']
+
   Cpu* = object
-    memory*: array[4096, byte] # Chip-8 is capable of addressing 4096 bytes of RAM
-                              # The first 512 bytes are reserved to the original interpreter
-    V*: array['0'..'F', uint8] # Chip-8 has 16 registers from V0 to VF
-    I*: uint16                 # memory address register
+    memory*: array[MaxMem+1, byte]  # Chip-8 is capable of addressing 4096 bytes of RAM
+                                    # The first 512 bytes are reserved to the original interpreter
+    V*: array[RegisterV, uint8]     # Chip-8 has 16 registers from V0 to VF
+    I*: uint16                      # memory address register
     stack*: array[16, uint16]
-    sp*: uint8                 # Stack pointer. Point to the top level of the stack
+    sp*: uint8                      # Stack pointer. Point to the top level of the stack
     delay_timer*: uint8
     sound_timer*: uint8
-    pc*: uint16                # Program Counter, currently executing address
+    pc*: uint16                     # Program Counter, currently executing address
 
 ##############################   Cpu   #########################################
 
