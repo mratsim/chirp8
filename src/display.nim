@@ -3,40 +3,7 @@
 
 {.experimental.}
 
-import sdl2
-
-const
-  Width: cint  = 64
-  Height: cint = 32
-  DimPix = 8
-  WidthScaled = Width * DimPix
-  HeightScaled = Height * DimPix
-
-type
-  Color* = enum
-    Black, White
-
-  Pixel* = object
-    pos: Rect # SDL_Rect
-    color: Color
-
-  RefPixels* = array[Black..White, SurfacePtr] # This will store the black and white pixel that will be blitted on screen
-
-  Pixels* = object
-    data: array[Height * Width, Pixel]
-
-proc `[]`*(pxs: Pixels, x, y: int): Pixel {.noSideEffect.}=
-  pxs.data[x * Width + y * Height]
-
-proc `[]`*(pxs: var Pixels, x, y: int): var Pixel {.noSideEffect.}=
-  pxs.data[x * Width + y * Height]
-
-proc `[]=`*(pxs: var Pixels, x, y: int, val: Pixel): Pixel {.noSideEffect.}=
-  pxs.data[x * Width + y * Height] = val
-
-iterator items(pxs: Pixels): Pixel {.noSideEffect.} =
-  for pixel in pxs.data:
-    yield pixel
+import sdl2, ./datatypes
 
 proc newScreen*(): SurfacePtr {.noSideEffect.} =
   result = createRGBSurface(0, WidthScaled, HeightScaled, 32,
@@ -45,31 +12,33 @@ proc newScreen*(): SurfacePtr {.noSideEffect.} =
                             0x000000FF'u32,
                             0xFF000000'u32)
 
-proc `destroy=`*(s: SurfacePtr) =
+proc newWindow*(): WindowPtr {.noSideEffect.} =
+  result = createWindow("Chirp-8", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WidthScaled, HeightScaled, SDL_WINDOW_SHOWN)
+
+proc newRenderer*(w: WindowPtr): RendererPtr {.noSideEffect.} =
+  result = createRenderer(w, -1, Renderer_Accelerated or Renderer_PresentVsync or Renderer_TargetTexture)
+
+proc `destroy=`*(s: SurfacePtr or WindowPtr or RendererPtr or TexturePtr) =
   destroy s
 
-# proc newRenderer(screen: SurfacePtr): RendererPtr =
-#   result = createRenderer(screen, )
-
 proc newPixel*(R, G, B: uint8): SurfacePtr {.noSideEffect.} =
-  result = createRGBSurface(0,DimPix,DimPix,32,0,0,0,0)
+  result = createRGBSurface(0, DimPix,DimPix,32,0,0,0,0)
   fillRect(result, nil, mapRGB(result.format, R, G, B))
 
-proc drawPixel(screen: SurfacePtr, refPix: RefPixels, pix: Pixel) {.noSideEffect.} =
-  blitSurface(refPix[pix.color], nil, screen, unsafeAddr pix.pos)
+proc drawPixel(gState: var GameState, pix: Pixel) {.noSideEffect.} =
+  blitSurface(gState.BlackWhite[pix.color], nil, gState.screen, unsafeAddr pix.pos)
 
-proc clearScreen*(screen: SurfacePtr, pxs: var Pixels) {.noSideEffect.} =
-  pxs = Pixels()
-  fillRect(screen, nil, Black.uint32)
-  # render
+proc clearScreen*(gState: var GameState) {.noSideEffect.} =
+  gState.video = Pixels()
+  fillRect(gState.screen, nil, Black.uint32)
 
-proc display(texture: TexturePtr, screen: SurfacePtr, renderer: RendererPtr) {.noSideEffect.} =
-  updateTexture(texture, nil, screen.pixels, screen.pitch)
-  renderer.clear()
-  renderer.copy(texture, nil, nil)
-  renderer.present
+proc display(gState: GameState) {.noSideEffect.} =
+  updateTexture(gState.texture, nil, gState.screen.pixels, gState.screen.pitch)
+  gState.renderer.clear()
+  gState.renderer.copy(gState.texture, nil, nil)
+  gState.renderer.present
 
-proc updateScreen*(renderer: RendererPtr, texture: TexturePtr, screen: SurfacePtr, refPix: RefPixels, pxs: Pixels) {.noSideEffect.} =
-  for pixel in pxs:
-    drawPixel(screen, refPix, pixel)
-  display(texture, screen, renderer)
+proc updateScreen*(gState: var GameState) {.noSideEffect.} =
+  for pixel in gState.video:
+    drawPixel(gState, pixel)
+  gState.display
