@@ -44,10 +44,10 @@ proc push*(s: var Stack, v: uint16) {.inline, noSideEffect.}=
 import sdl2
 
 const
-  Width*  = 64'u8
-  Height* = 32'u8
-  DimPix* = 8'u8
-  WidthScaled* = Width.cint * DimPix.cint   # Cint: Prevent overflow + SDL compat
+  Width*  = 64
+  Height* = 32
+  DimPix* = 8
+  WidthScaled* = Width.cint * DimPix.cint   # SDL compat
   HeightScaled* = Height.cint * DimPix.cint
 
 type

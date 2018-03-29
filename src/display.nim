@@ -25,16 +25,18 @@ proc drawPixel(self: var GameState, pix: Pixel) {.noSideEffect.} =
   blitSurface(BlackWhite[pix.color], nil, screen, unsafeAddr pix.pos)
 
 proc newPixels*(): Pixels {.noSideEffect.}=
-  for x in 0'u8 ..< Width:
-    for y in 0'u8 ..< Height:
+  for x in 0 ..< Width:
+    for y in 0 ..< Height:
       let pos = addr result[x, y].pos
       pos.x = cint x * DimPix
       pos.y = cint y * DimPix
+      pos.w = DimPix
+      pos.h = DimPix
 
-      # if (x mod (y+1)) == 0:
-      #   result[x, y].color = Black
-      # else:
-      result[x, y].color = White
+      if (x mod (y+1)) == 0:
+        result[x, y].color = Black
+      else:
+        result[x, y].color = White
 
 proc clearScreen*(self: var GameState) {.noSideEffect.} =
   video = newPixels()

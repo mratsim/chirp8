@@ -14,4 +14,3 @@ proc startGame*(): GameState =
   result.screen = newScreen()
   result.texture = createTextureFromSurface(result.renderer, result.screen)
   result.BlackWhite = [newPixel(0,0,0), newPixel(0xFF,0xFF,0xFF)]
-

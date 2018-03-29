@@ -244,14 +244,14 @@ proc draw_dxyn(self: var GameState, ins: Instruction) {.noSideEffect.} =
 
   let
     offsetY = cpu.V[ins.draw_vy]
-    borderY = min(offsetY + ins.height, Height.uint8) # Don't go past the screen
+    borderY = min(offsetY + ins.height, Height) # Don't go past the screen
 
   for row in offsetY ..< borderY:
     for idx, pix in unpack(cpu.memory[cpu.I + row]):
       let
         offsetX = cpu.V[ins.draw_vx]
         col = offsetX + idx
-      if pix and col < Width.uint8: # Don't go past the screen
+      if pix and col < Width: # Don't go past the screen
         if video[row, col].color == White:
           # if a pixel is already white, it is unset and VF "detects a collision"
           cpu.V['F'] = 1
