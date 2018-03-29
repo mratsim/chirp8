@@ -8,6 +8,7 @@ proc startGame*(): GameState =
   result.cpu = initCPU()
   result.event = sdl2.defaultEvent
   result.running = true
+  result.video = newPixels()
   result.window = newWindow()
   result.renderer = newRenderer(result.window)
   result.screen = newScreen()

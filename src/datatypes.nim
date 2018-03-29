@@ -25,11 +25,11 @@ type
 import sdl2
 
 const
-  Width: cint  = 64
-  Height: cint = 32
-  DimPix* = 8
-  WidthScaled* = Width * DimPix
-  HeightScaled* = Height * DimPix
+  Width*  = 64'u8
+  Height* = 32'u8
+  DimPix* = 8'u8
+  WidthScaled* = Width.cint * DimPix.cint   # Cint: Prevent overflow + SDL compat
+  HeightScaled* = Height.cint * DimPix.cint
 
 type
   Color* = enum
@@ -40,20 +40,53 @@ type
     color*: Color
 
   Pixels* = object
-    data*: array[Height * Width, Pixel]
+    data*: array[Width * Height, Pixel]
 
-proc `[]`*(pxs: Pixels, x, y: int): Pixel {.noSideEffect.}=
-  pxs.data[x * Width + y * Height]
+# Note on representation
+# Space invaders alien would be:
+#  Sprite map   Binary      Hex
+#  X.XXX.X.     0b10111010  $BA
+#  .XXXXX..     0b01111100  $7C
+#  XX.X.XX.     0b11010110  $D6
+#  XXXXXXX.     0b11111110  $FE
+#  .X.X.X..     0b01010100  $54
+#  X.X.X.X.     0b10101010  $AA
 
-proc `[]`*(pxs: var Pixels, x, y: int): var Pixel {.noSideEffect.}=
-  pxs.data[x * Width + y * Height]
+# Loading it would be
+#  PC    Opcodes   Assembly
+#  0210  620A      MOVV V2,#$0A
+#  0212  630C      MOVV V3,#$0C
+#  0214  A220      MOVI I,#$220
+#  0216  D236      DRAW V2, V3, #$6
+#  0218  1240      JUMP $240
+#  0220  BA7C      Sprite data for 6 bytes
+#  0222  D6FE
+#  0224  54AA
 
-proc `[]=`*(pxs: var Pixels, x, y: int, val: Pixel): Pixel {.noSideEffect.}=
-  pxs.data[x * Width + y * Height] = val
+# With coordinates
+# (x: 0, y:0)              (x:63, y: 0) #
+#                                       #
+#                                       #
+# (x: 0, y:31)             (x:63, y:31) #
 
-iterator items*(pxs: Pixels): Pixel {.noSideEffect.} =
+# So data is stored in row-major order: the column (x) changes the fastest
+
+proc `[]`*(pxs: Pixels, x, y: Someinteger): Pixel {.noSideEffect, inline.}=
+  pxs.data[y * Width + x]
+
+proc `[]`*(pxs: var Pixels, x, y: Someinteger): var Pixel {.noSideEffect, inline.}=
+  pxs.data[y * Width + x]
+
+proc `[]=`*(pxs: var Pixels, x, y: Someinteger, val: Pixel): Pixel {.noSideEffect, inline.}=
+  pxs.data[y * Width + x] = val
+
+iterator items*(pxs: Pixels): Pixel {.noSideEffect, inline.} =
   for pixel in pxs.data:
     yield pixel
+
+proc `xor`*(c1, c2: Color): Color {.noSideEffect, inline.}=
+  Color(bool(c1) xor bool(c2))
+
 ############################## Display #########################################
 
 ###########################   Game State   #####################################

@@ -22,14 +22,23 @@ proc `destroy=`*(s: SurfacePtr or WindowPtr or RendererPtr or TexturePtr) =
   destroy s
 
 proc newPixel*(R, G, B: uint8): SurfacePtr {.noSideEffect.} =
-  result = createRGBSurface(0, DimPix,DimPix,32,0,0,0,0)
+  result = createRGBSurface(0, DimPix.cint,DimPix.cint,32,0,0,0,0)
   fillRect(result, nil, mapRGB(result.format, R, G, B))
 
 proc drawPixel(gState: var GameState, pix: Pixel) {.noSideEffect.} =
   blitSurface(gState.BlackWhite[pix.color], nil, gState.screen, unsafeAddr pix.pos)
 
+proc newPixels*(): Pixels {.noSideEffect.}=
+  for x in 0'u8 ..< Width:
+    for y in 0'u8 ..< Height:
+      let pos = addr result[x, y].pos
+      pos.x = cint x * DimPix
+      pos.y = cint y * DimPix
+
+      result[x, y].color = Black
+
 proc clearScreen*(gState: var GameState) {.noSideEffect.} =
-  gState.video = Pixels()
+  gState.video = newPixels()
   fillRect(gState.screen, nil, Black.uint32)
 
 proc display(gState: GameState) {.noSideEffect.} =
