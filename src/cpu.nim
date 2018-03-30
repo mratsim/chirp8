@@ -3,9 +3,6 @@
 
 import ./datatypes, ./display, strutils, random
 
-const
-  StartProg = 0x200'u16 # The first 512 bytes are reserved for the interpreter
-
 type
   ProgMem   = range[StartProg .. MaxMem - 1]
 
@@ -94,9 +91,16 @@ proc `$`(mem: ProgMem): string  {.noSideEffect, inline.} =
   # Workaround otherwise I get ambiguous call
   system.`$`(mem.int)
 
+{.this: self.}
+proc dec_timers*(self: var GameState) {.noSideEffect.} =
+  if cpu.delay_timer != 0:
+    dec cpu.delay_timer
+  if cpu.sound_timer != 0:
+    dec cpu.sound_timer
+
 ############################## Fetch #########################################
 
-proc fetch(cpu: Cpu): Opcode {.noSideEffect, inline.} =
+proc fetch*(self: GameState): Opcode {.noSideEffect, inline.} =
 
   # Big Endian fetching
   result.bytes.hi = cpu.memory[cpu.pc]
@@ -106,7 +110,7 @@ proc fetch(cpu: Cpu): Opcode {.noSideEffect, inline.} =
 
 ############################## Decode #########################################
 
-proc decode(opcode: Opcode): Instruction {.noSideEffect.} =
+proc decode*(opcode: Opcode): Instruction {.noSideEffect.} =
 
   # Templates to avoid copy paste
   template fatal() =
@@ -133,7 +137,7 @@ proc decode(opcode: Opcode): Instruction {.noSideEffect.} =
   template setVxVy(Kind: InstructionKind) =
     result.kind = Kind
     result.vx = toRegisterV opcode.bytes.hi and 0x0F
-    result.vy = toRegisterV opcode.bytes.lo and 0xF0
+    result.vy = toRegisterV `shr`(opcode.bytes.lo and 0xF0, 4)
 
   template setShift(Kind: InstructionKind) =
     result.kind = Kind
@@ -142,7 +146,7 @@ proc decode(opcode: Opcode): Instruction {.noSideEffect.} =
   template setDraw(Kind: InstructionKind) =
     result.kind = Kind
     result.draw_vx = toRegisterV opcode.bytes.hi and 0x0F
-    result.draw_vy = toRegisterV opcode.bytes.lo and 0xF0
+    result.draw_vy = toRegisterV `shr`(opcode.bytes.lo and 0xF0, 4)
     result.height = opcode.bytes.lo and 0x0F
 
   template setKey(Kind: InstructionKind) =
@@ -168,6 +172,8 @@ proc decode(opcode: Opcode): Instruction {.noSideEffect.} =
   template setLoadStor(Kind: InstructionKind) =
     result.kind = Kind
     result.end_vx = toRegisterV opcode.bytes.hi and 0x0F
+
+  debugecho "\nNext: " & opcode.word.toHex
 
   # At first level we check the most significant byte.
   # Case statements should be transformed into a jump table
@@ -235,7 +241,6 @@ iterator unpack(sprite_line: byte): tuple[idx: uint8, pixSet: bool] {.noSideEffe
   yield (6'u8, bool((sprite_line and 0b00000010) shr 1))
   yield (7'u8, bool( sprite_line and 0b00000001))
 
-{.this: self.}
 proc draw_dxyn(self: var GameState, ins: Instruction) {.noSideEffect.} =
   # Draw N height sprite at position VX and VY. VF = 1 if pixels are unset (1 xor 1)
   # Data is taken from address starting at I
@@ -257,11 +262,15 @@ proc draw_dxyn(self: var GameState, ins: Instruction) {.noSideEffect.} =
           cpu.V['F'] = 1
         video[row, col].color = video[row, col].color xor White
 
-proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
+proc execute*(self: var GameState, ins: Instruction) {.noSideEffect.} =
   template next() =
     # Next instruction is 2 bytes away
     inc cpu.pc, 2
 
+  debugecho "V: " & $self.cpu.V
+  debugecho "pc: " & $self.cpu.pc
+  debugecho "stack: " & $self.cpu.stack
+  debugecho ins
 
   case ins.kind:
   of Clr: clearScreen();                                         next()
@@ -269,11 +278,14 @@ proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
   of Jump: cpu.pc = ins.memaddr                                  ######
   of Call: cpu.stack.push cpu.pc; cpu.pc = ins.memaddr           ######
   of Ske:
-    if cpu.V[ins.reg] == ins.val: next();                        next()
+    if cpu.V[ins.reg] == ins.val: next()
+    next()
   of Skne:
-    if cpu.V[ins.reg] != ins.val: next();                        next()
+    if cpu.V[ins.reg] != ins.val: next()
+    next()
   of Skre:
-    if cpu.V[ins.vx] == cpu.V[ins.vy]: next();                   next()
+    if cpu.V[ins.vx] == cpu.V[ins.vy]: next()
+    next()
   of Movv: cpu.V[ins.reg] = ins.val;                             next()
   of Addv: cpu.V[ins.reg] += ins.val;                            next()
   of Mov: cpu.V[ins.vx] = cpu.V[ins.vy];                         next()
@@ -283,23 +295,29 @@ proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
   of Add:
     cpu.V[ins.vx] += cpu.V[ins.vy]
     # test if carry
-    cpu.V['F'] = (cpu.V[ins.vx] < cpu.V[ins.vy]).uint8;          next()
+    cpu.V['F'] = (cpu.V[ins.vx] < cpu.V[ins.vy]).uint8
+    next()
   of Sub:
     cpu.V[ins.vx] -= cpu.V[ins.vy]
     # test if NO! borrow
-    cpu.V['F'] = (cpu.V[ins.vx] <= not cpu.V[ins.vy]).not.uint8; next()
+    cpu.V['F'] = (cpu.V[ins.vx] <= not cpu.V[ins.vy]).not.uint8
+    next()
   of Subn:
     cpu.V[ins.vx] = cpu.V[ins.vy] - cpu.V[ins.vx]
     # test if NO! borrow
-    cpu.V['F'] = (cpu.V[ins.vx] > cpu.V[ins.vy]).not.uint8;      next()
+    cpu.V['F'] = (cpu.V[ins.vx] > cpu.V[ins.vy]).not.uint8
+    next()
   of Shr:
     cpu.V['F'] = cpu.V[ins.vx] and 1 # extract bit 0
-    cpu.V[ins.vx] = cpu.V[ins.vx] shr 1;                         next()
+    cpu.V[ins.vx] = cpu.V[ins.vx] shr 1
+    next()
   of Shl:
     cpu.V['F'] = (cpu.V[ins.vx] shr 7) and 1 # extract bit 7
-    cpu.V[ins.vx] = cpu.V[ins.vx] shl 1;                         next()
+    cpu.V[ins.vx] = cpu.V[ins.vx] shl 1
+    next()
   of Skrne:
-    if cpu.V[ins.vx] != cpu.V[ins.vy]: next();                   next()
+    if cpu.V[ins.vx] != cpu.V[ins.vy]: next()
+    next()
   of Movi: cpu.I = ins.memaddr;                                  next()
   of Jump0: cpu.pc = ins.memaddr + cpu.V['0']                    ######
   of Rand: cpu.V[ins.reg] = rand(0 .. 255).uint8 and ins.val;    next()

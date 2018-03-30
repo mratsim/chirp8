@@ -3,13 +3,15 @@
 
 ##############################   Cpu   #########################################
 
-const MaxMem* = 0xFFFF'u16
+const
+  StartProg* = 0x200'u16 # The first 512 bytes are reserved for the interpreter
+  MaxMem* = 0xFFFF'u16
 
 type
   RegisterV* = range['0'..'F']
   Stack*     = object
-    data: array[16, uint16]
-    len:  uint8                     # Stack Pointer. Point to the top level of the stack
+    data*: array[16, uint16]
+    len*:  uint8                     # Stack Pointer. Point to the top level of the stack
 
   Cpu* = object
     memory*: array[MaxMem+1, byte]  # Chip-8 is capable of addressing 4096 bytes of RAM
