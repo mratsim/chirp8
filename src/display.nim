@@ -33,12 +33,7 @@ proc newPixels*(): Pixels {.noSideEffect.}=
       pos.w = DimPix
       pos.h = DimPix
 
-
       result[x, y].color = Black
-      # if (x mod (y+1)) == 0:
-      #   result[x, y].color = Black
-      # else:
-      #   result[x, y].color = White
 
 proc clearScreen*(self: var GameState) {.noSideEffect.} =
   video = newPixels()

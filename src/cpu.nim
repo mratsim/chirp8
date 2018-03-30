@@ -337,10 +337,3 @@ proc execute*(self: var GameState, ins: Instruction) {.noSideEffect.} =
   of Load:    discard; next()                         ### TODO Stub ###
 
 ############################## Execute #########################################
-
-when isMainModule:
-
-  let a = OpCode(word: 0x00EE)
-
-
-  echo a.decode
