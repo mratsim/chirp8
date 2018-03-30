@@ -5,7 +5,7 @@
 
 const
   StartProg* = 0x200'u16 # The first 512 bytes are reserved for the interpreter
-  MaxMem* = 0xFFFF'u16
+  MaxMem*    = 0xFFF'u16 # Chip-8 can address 0..<4096 bytes
 
 type
   RegisterV* = range['0'..'F']
