@@ -127,7 +127,6 @@ proc decode*(opcode: Opcode): Instruction {.noSideEffect.} =
   template setMemAddr(Kind: InstructionKind) =
     result.kind = Kind
     result.memaddr = opcode.word and 0x0FFF
-    assert result.memaddr.isEven, "Incorrect address. Adresses should always be even"
 
   template setRegVal(Kind: InstructionKind) =
     result.kind = Kind
