@@ -46,8 +46,8 @@ proc main() =
     for ins_count in 0 ..< Speed:
       gameState.execute gameState.fetch.decode
 
-      gameState.updateScreen
-      gameState.dec_timers
-      sdl2.delay(Fps)
+    gameState.updateScreen
+    gameState.dec_timers
+    sdl2.delay(Fps)
 
 main()

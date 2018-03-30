@@ -173,7 +173,7 @@ proc decode*(opcode: Opcode): Instruction {.noSideEffect.} =
     result.kind = Kind
     result.end_vx = toRegisterV opcode.bytes.hi and 0x0F
 
-  debugecho "\nNext: " & opcode.word.toHex
+  debugecho "\nNext raw opcode: " & opcode.word.toHex
 
   # At first level we check the most significant byte.
   # Case statements should be transformed into a jump table
@@ -270,7 +270,8 @@ proc execute*(self: var GameState, ins: Instruction) {.noSideEffect.} =
   debugecho "V: " & $self.cpu.V
   debugecho "pc: " & $self.cpu.pc
   debugecho "stack: " & $self.cpu.stack
-  debugecho ins
+  debugecho "I: " & $self.cpu.I
+  debugecho "To be executed: " & $ins
 
   case ins.kind:
   of Clr: clearScreen();                                         next()
