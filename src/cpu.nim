@@ -278,6 +278,7 @@ proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
   of Addv: cpu.V[ins.reg] += ins.val;                            next()
   of Mov: cpu.V[ins.vx] = cpu.V[ins.vy];                         next()
   of Or: cpu.V[ins.vx] = cpu.V[ins.vx] or cpu.V[ins.vy];         next()
+  of And: cpu.V[ins.vx] = cpu.V[ins.vx] and cpu.V[ins.vy];       next()
   of Xor: cpu.V[ins.vx] = cpu.V[ins.vx] xor cpu.V[ins.vy];       next()
   of Add:
     cpu.V[ins.vx] += cpu.V[ins.vy]
@@ -302,7 +303,18 @@ proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
   of Movi: cpu.I = ins.memaddr;                                  next()
   of Jump0: cpu.pc = ins.memaddr + cpu.V['0']                    ######
   of Rand: cpu.V[ins.reg] = rand(0 .. 255).uint8 and ins.val;    next()
-
+  of Draw: draw_dxyn(self, ins);                                 next()
+  of Skke: discard; next()                            ### TODO Stub ###
+  of Skkne:discard; next()                            ### TODO Stub ###
+  of Movdelay: cpu.V[ins.timer_vx] = cpu.delay_timer;            next()
+  of Key:  discard; next()                            ### TODO Stub ###
+  of Delay: cpu.delay_timer = cpu.V[ins.timer_vx];               next()
+  of Sound: cpu.sound_timer = cpu.V[ins.timer_vx];               next()
+  of Addi: cpu.I += cpu.V[ins.addi_vx];                          next()
+  of Char: cpu.I = ins.char_addr;                                next()
+  of Storbcd: discard; next()                         ### TODO Stub ###
+  of Stor:    discard; next()                         ### TODO Stub ###
+  of Load:    discard; next()                         ### TODO Stub ###
 
 ############################## Execute #########################################
 
