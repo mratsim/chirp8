@@ -1,7 +1,7 @@
 # Copyright (c) 2018 Mamy André-Ratsimbazafy
 # Distributed under the Apache v2 License (license terms are at http://www.apache.org/licenses/LICENSE-2.0).
 
-import ./datatypes, ./display, strutils
+import ./datatypes, ./display, strutils, random
 
 const
   StartProg = 0x200'u16 # The first 512 bytes are reserved for the interpreter
@@ -28,7 +28,7 @@ type
     Jump,      # 1NNN # Jump to NNN
     Call,      # 2NNN # Call routine at NNN
     Ske,       # 3XNN # Skip next instruction if VX == NN
-    Skne,      # 4XNN # Do not skip if VX == NN
+    Skne,      # 4XNN # Skip if VX != NN
     Skre,      # 5XY0 # Skip if VX == VY
     Movv,      # 6XNN # VX = NN
     Addv,      # 7XNN # VX += NN
@@ -44,7 +44,7 @@ type
     Skrne,     # 9XY0 # Skip next instruction if VX != VY
     Movi,      # ANNN # I = NNN
     Jump0,     # BNNN # Jump at NNN + V0
-    Rand,      # CXNN # Generate a random number [0..nn] in VX
+    Rand,      # CXNN # Generate a random number 0.. 255 and "and" with the content of VX
     Draw,      # DXYN # Draw N height sprite at address I at position VX and VY. VF = 1 if pixels are unset (1 xor 1)
     Skke,      # EX9E # Skip next instruction if key_hex(VX) is pressed
     Skkne,     # EXA1 # Skip next instruction if key_hex(VX) is not pressed
@@ -257,21 +257,51 @@ proc draw_dxyn(self: var GameState, ins: Instruction) {.noSideEffect.} =
           cpu.V['F'] = 1
         video[row, col].color = video[row, col].color xor White
 
-# proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
-#   template next() =
-#     # Next instruction is 2 bytes away
-#     inc cpu.pc, 2
+proc execute(self: var GameState, ins: Instruction) {.noSideEffect.} =
+  template next() =
+    # Next instruction is 2 bytes away
+    inc cpu.pc, 2
 
 
-#   case ins.kind:
-#   of Clr: clearScreen()
-#   of Ret: cpu.pc = cpu.stack.pop; next()
-#   of Jump: cpu.pc = ins.memaddr
-#   of Call: cpu.stack.push cpu.pc; cpu.pc = ins.memaddr
-
-
-
-
+  case ins.kind:
+  of Clr: clearScreen();                                         next()
+  of Ret: cpu.pc = cpu.stack.pop;                                next()
+  of Jump: cpu.pc = ins.memaddr                                  ######
+  of Call: cpu.stack.push cpu.pc; cpu.pc = ins.memaddr           ######
+  of Ske:
+    if cpu.V[ins.reg] == ins.val: next();                        next()
+  of Skne:
+    if cpu.V[ins.reg] != ins.val: next();                        next()
+  of Skre:
+    if cpu.V[ins.vx] == cpu.V[ins.vy]: next();                   next()
+  of Movv: cpu.V[ins.reg] = ins.val;                             next()
+  of Addv: cpu.V[ins.reg] += ins.val;                            next()
+  of Mov: cpu.V[ins.vx] = cpu.V[ins.vy];                         next()
+  of Or: cpu.V[ins.vx] = cpu.V[ins.vx] or cpu.V[ins.vy];         next()
+  of Xor: cpu.V[ins.vx] = cpu.V[ins.vx] xor cpu.V[ins.vy];       next()
+  of Add:
+    cpu.V[ins.vx] += cpu.V[ins.vy]
+    # test if carry
+    cpu.V['F'] = (cpu.V[ins.vx] < cpu.V[ins.vy]).uint8;          next()
+  of Sub:
+    cpu.V[ins.vx] -= cpu.V[ins.vy]
+    # test if NO! borrow
+    cpu.V['F'] = (cpu.V[ins.vx] <= not cpu.V[ins.vy]).not.uint8; next()
+  of Subn:
+    cpu.V[ins.vx] = cpu.V[ins.vy] - cpu.V[ins.vx]
+    # test if NO! borrow
+    cpu.V['F'] = (cpu.V[ins.vx] > cpu.V[ins.vy]).not.uint8;      next()
+  of Shr:
+    cpu.V['F'] = cpu.V[ins.vx] and 1 # extract bit 0
+    cpu.V[ins.vx] = cpu.V[ins.vx] shr 1;                         next()
+  of Shl:
+    cpu.V['F'] = (cpu.V[ins.vx] shr 7) and 1 # extract bit 7
+    cpu.V[ins.vx] = cpu.V[ins.vx] shl 1;                         next()
+  of Skrne:
+    if cpu.V[ins.vx] != cpu.V[ins.vy]: next();                   next()
+  of Movi: cpu.I = ins.memaddr;                                  next()
+  of Jump0: cpu.pc = ins.memaddr + cpu.V['0']                    ######
+  of Rand: cpu.V[ins.reg] = rand(0 .. 255).uint8 and ins.val;    next()
 
 
 ############################## Execute #########################################
