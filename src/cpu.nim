@@ -127,7 +127,7 @@ proc decode*(opcode: Opcode): Instruction {.noSideEffect.} =
   template setMemAddr(Kind: InstructionKind) =
     result.kind = Kind
     result.memaddr = opcode.word and 0x0FFF
-    assert result.memaddr.isEven, "Incorrect address."
+    assert result.memaddr.isEven, "Incorrect address. Adresses should always be even"
 
   template setRegVal(Kind: InstructionKind) =
     result.kind = Kind
@@ -173,7 +173,8 @@ proc decode*(opcode: Opcode): Instruction {.noSideEffect.} =
     result.kind = Kind
     result.end_vx = toRegisterV opcode.bytes.hi and 0x0F
 
-  debugecho "\nNext raw opcode: " & opcode.word.toHex
+  when defined(debug):
+    debugecho "\nNext raw opcode: " & opcode.word.toHex
 
   # At first level we check the most significant byte.
   # Case statements should be transformed into a jump table
@@ -231,15 +232,15 @@ proc decode*(opcode: Opcode): Instruction {.noSideEffect.} =
 
 ############################## Execute #########################################
 
-iterator unpack(sprite_line: byte): tuple[idx: uint8, pixSet: bool] {.noSideEffect, inline.} =
-  yield (0'u8, bool((sprite_line and 0b10000000) shr 7))
-  yield (1'u8, bool((sprite_line and 0b01000000) shr 6))
-  yield (2'u8, bool((sprite_line and 0b00100000) shr 5))
-  yield (3'u8, bool((sprite_line and 0b00010000) shr 4))
-  yield (4'u8, bool((sprite_line and 0b00001000) shr 3))
-  yield (5'u8, bool((sprite_line and 0b00000100) shr 2))
-  yield (6'u8, bool((sprite_line and 0b00000010) shr 1))
-  yield (7'u8, bool( sprite_line and 0b00000001))
+iterator unpack(sprite_line: byte): tuple[idx: int, pixSet: bool] {.noSideEffect, inline.} =
+  yield (0, bool((sprite_line and 0b10000000) shr 7))
+  yield (1, bool((sprite_line and 0b01000000) shr 6))
+  yield (2, bool((sprite_line and 0b00100000) shr 5))
+  yield (3, bool((sprite_line and 0b00010000) shr 4))
+  yield (4, bool((sprite_line and 0b00001000) shr 3))
+  yield (5, bool((sprite_line and 0b00000100) shr 2))
+  yield (6, bool((sprite_line and 0b00000010) shr 1))
+  yield (7, bool( sprite_line and 0b00000001))
 
 proc draw_dxyn(self: var GameState, ins: Instruction) {.noSideEffect.} =
   # Draw N height sprite at position VX and VY. VF = 1 if pixels are unset (1 xor 1)
@@ -248,30 +249,31 @@ proc draw_dxyn(self: var GameState, ins: Instruction) {.noSideEffect.} =
   assert ins.kind == Draw
 
   let
-    offsetY = cpu.V[ins.draw_vy]
-    borderY = min(offsetY + ins.height, Height) # Don't go past the screen
+    offsetX = int cpu.V[ins.draw_vx]
+    offsetY = int cpu.V[ins.draw_vy]
+    borderY = int min(offsetY + ins.height.int, Height) # Don't go past the screen
 
-  for row in offsetY ..< borderY:
-    for idx, pix in unpack(cpu.memory[cpu.I + row]):
-      let
-        offsetX = cpu.V[ins.draw_vx]
-        col = offsetX + idx
-      if pix and col < Width: # Don't go past the screen
-        if video[row, col].color == White:
+  for iy in 0 ..< borderY - offsetY:
+    let y = offsetY + iy
+    for ix, pixel in unpack(cpu.memory[cpu.I + iy.uint16]):
+      let x = offsetX + ix
+      if pixel and (x < Width): # Don't go past the screen
+        if video[x, y].color == White:
           # if a pixel is already white, it is unset and VF "detects a collision"
           cpu.V['F'] = 1
-        video[row, col].color = video[row, col].color xor White
+        video[x, y].color = video[x, y].color xor White
 
 proc execute*(self: var GameState, ins: Instruction) {.noSideEffect.} =
   template next() =
     # Next instruction is 2 bytes away
     inc cpu.pc, 2
 
-  debugecho "V: " & $self.cpu.V
-  debugecho "pc: " & $self.cpu.pc
-  debugecho "stack: " & $self.cpu.stack
-  debugecho "I: " & $self.cpu.I
-  debugecho "To be executed: " & $ins
+  when defined(debug):
+    debugecho "V: " & $self.cpu.V
+    debugecho "pc: " & $self.cpu.pc
+    debugecho "stack: " & $self.cpu.stack
+    debugecho "I: " & $self.cpu.I
+    debugecho "To be executed: " & $ins
 
   case ins.kind:
   of Clr: clearScreen();                                         next()
