@@ -67,7 +67,7 @@ proc main() =
   discard sdl2.init(INIT_EVERYTHING)
 
   # get keybinding
-  let keys = readKeyCfg("keybindings.cfg")
+  let keys = readKeyCfg("../config/keybindings.cfg")
 
   # start the game
   var gameState = startGame()

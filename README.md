@@ -10,9 +10,11 @@ branch contains hardcoded key presses for two key input instructions:
 next instruction if key `x` is not pressed). The instruction `F00A` is
 yet to be implemented.
 
-The hardcoded keys will soon be replaced by reading a config file.
+The keybindings are defined in the [](config/keybindings.cfg)
+file. The location of the config file is currently hardcoded and
+depends on the binary being called from `src`.
 
-Known used keys (in the current hardcoded scheme):
+Some example keys for the current keybindings are as follows:
 
     Pong:
         Arrow up: paddle up
@@ -21,13 +23,22 @@ Known used keys (in the current hardcoded scheme):
         Arrow down: ship left
         Arrow right: ship right
     Tetris:
-        R: move block left
+        W: move block left
         A: drop block faster
         Arrow down: rotate block
         Arrow right: move block right
 
-As one can see, the keys are all over the place. :)
+As one can see, the keys are somewhat all over the place and in
+principle need to be set for each game individually.
 
 Some GIFs:
 
 ![Pong](images/pong.gif) ![Tetris](images/tetris.gif) ![Space Invaders](images/invaders.gif)
+
+## Known issues
+
+The emulation seems to be somewhat broken as of now. Collision
+detection does not really work in some cases, e.g. the ball simply
+resets before it hits the opposite paddle in pong and the blocks in
+tetris fall through the floor. There is also quite some flickering
+happening.
