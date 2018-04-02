@@ -87,7 +87,7 @@ type
 proc initCPU*(): CPU {.noSideEffect.} =
   result.pc = StartProg
 
-proc `$`(mem: ProgMem): string  {.noSideEffect, inline.} =
+proc `$`(mem: ProgMem): string {.noSideEffect, inline.} =
   # Workaround otherwise I get ambiguous call
   system.`$`(mem.int)
 
@@ -97,6 +97,17 @@ proc dec_timers*(self: var GameState) {.noSideEffect.} =
     dec cpu.delay_timer
   if cpu.sound_timer != 0:
     dec cpu.sound_timer
+
+
+proc keyDown*(self: var GameState, key: char) =
+  ## given a char set the corresponding element of the keys pressed
+  ## `key` array of the CPU to true
+  cpu.key[key] = true
+
+proc keyUp*(self: var GameState, key: char) =
+  ## given a char set the corresponding element of the keys pressed
+  ## `key` array of the CPU to false
+  cpu.key[key] = false
 
 ############################## Fetch #########################################
 
@@ -324,10 +335,24 @@ proc execute*(self: var GameState, ins: Instruction) {.noSideEffect.} =
   of Jump0: cpu.pc = ins.memaddr + cpu.V['0']                    ######
   of Rand: cpu.V[ins.reg] = rand(0 .. 255).uint8 and ins.val;    next()
   of Draw: draw_dxyn(self, ins);                                 next()
-  of Skke: discard; next()                            ### TODO Stub ###
-  of Skkne:discard; next()                            ### TODO Stub ###
+  of Skke:
+    # skip instruction, if key given in Vx is pressed:
+    # e.g. key_vx is '4' we check the 4th register. 
+    # Some value 0..15 is stored in that register, which will be
+    # interpreted as a key. Now we check our key map, whether that key
+    # is pressed. If so, skip the instruction.
+    # add ord('0') to get correct offset of int value e.g. `4` to ASCII
+    # value of `4` 
+    if cpu.key[char(cpu.V[ins.key_vx] + ord('0'))]:
+      next()
+    next()
+  of Skkne:
+    # same as Skke except we skip if key is `not` pressed
+    if not cpu.key[char(cpu.V[ins.key_vx] + ord('0'))]:
+      next()
+    next()
   of Movdelay: cpu.V[ins.timer_vx] = cpu.delay_timer;            next()
-  of Key:  discard; next()                            ### TODO Stub ###
+  of Key: discard; next()                             ### TODO Stub ###
   of Delay: cpu.delay_timer = cpu.V[ins.timer_vx];               next()
   of Sound: cpu.sound_timer = cpu.V[ins.timer_vx];               next()
   of Addi: cpu.I += cpu.V[ins.addi_vx];                          next()

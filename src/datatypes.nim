@@ -17,6 +17,7 @@ type
     memory*: array[MaxMem+1, byte]  # Chip-8 is capable of addressing 4096 bytes of RAM
                                     # The first 512 bytes are reserved to the original interpreter
     V*: array[RegisterV, uint8]     # Chip-8 has 16 registers from V0 to VF
+    key*: array[RegisterV, bool]
     I*: uint16                      # memory address register
     pc*: uint16                     # Program Counter, currently executing address
     stack*: Stack                   # Stack + Stack pointer
@@ -116,7 +117,7 @@ proc `xor`*(c1, c2: Color): Color {.noSideEffect, inline.}=
 ###########################   Game State   #####################################
 
 const
-  Speed* = 4 # Todo replace by "Cycles per second" and associate each instruction with a number of cycle
+  Speed* = 4  # Todo replace by "Cycles per second" and associate each instruction with a number of cycle
   Fps*   = 16 # Frame per second
 
 type

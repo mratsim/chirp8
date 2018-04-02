@@ -22,6 +22,45 @@ proc loadRom*(self: var GameState, romPath: string) =
   let stream = openFileStream(romPath, mode = fmRead)
   discard stream.readData(self.cpu.memory[StartProg].addr, fsize.int)
 
+proc parseKeyInput(key: cint): char =
+  ## parses the key input from SDL2 by the cint constants
+  ## TODO: replace hardcoded keys with keys read from .cfg
+  case key:
+  of K_UP:
+    result = '1'
+  of K_DOWN:
+    result = '4'
+  of K_LEFT:
+    result = '2'
+  of K_RIGHT:
+    result = '6'
+  of K_Q:
+    result = '0'
+  of K_W:
+    result = '8'
+  of K_E:
+    result = '3'
+  of K_R:
+    result = '5'
+  of K_A:
+    result = '7'
+  of K_S:
+    result = '9'
+  of K_D:
+    result = 'A'
+  of K_F:
+    result = 'B'
+  of K_Z:
+    result = 'C'
+  of K_X:
+    result = 'D'
+  of K_C:
+    result = 'E'
+  of K_V:
+    result = 'F'
+  else:
+    result = 'q'
+
 proc main() =
   assert commandLineParams().len == 1, "There should be only one argument, the path of the rom to load"
   discard sdl2.init(INIT_EVERYTHING)
@@ -38,8 +77,15 @@ proc main() =
         gameState.running = false
         break
       of KeyDown:
-        gameState.running = false
-        break
+        let key = parseKeyInput(gameState.event.key.keysym.sym)
+        case key:
+        of 'q':
+          gameState.running = false
+        else:
+          gameState.keyDown(key)
+      of KeyUp:
+        let key = parseKeyInput(gameState.event.key.keysym.sym)
+        gameState.keyUp(key)
       else:
         break
 
