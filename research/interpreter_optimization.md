@@ -12,3 +12,6 @@
 | Dynamic recompilation - accompanying source code | https://github.com/marco9999/Super8_jitcore/ |
 | Jump tables vs Switch | http://www.cipht.net/2017/10/03/are-jump-tables-always-fastest.html |
 | Paper: branch prediction and the performance of Interpreters - Don't trust the folklore | https://hal.inria.fr/hal-01100647/document|
+| Presentation: Interpretation (basic indirect and direct threaded) vs binary translation | http://www.ittc.ku.edu/~kulkarni/teaching/EECS768/slides/chapter2.pdf |
+| Threaded interpretation vs Dynarec | http://www.emutalk.net/threads/55275-Threaded-interpretation-vs-Dynamic-Binary-Translation |
+| Dynamic recompilation wiki | http://emulation.gametechwiki.com/index.php/Dynamic_recompilation |
