@@ -6,3 +6,9 @@
 | In-depth dive on how to write an emulator | http://fms.komkon.org/EMUL8/HOWTO.html |
 | Review of interpreter dispatch strategies to limit branch mispredictions: direct threaded code vs indirect threaded code vs token threaded code vs switch based dispatching vs replicated switch dispatching + Bibliography | http://realityforge.org/code/virtual-machines/2011/05/19/interpreters.html |
 | Fast VMs without assembly - speeding up the interpreter loop: threaded interpreter, duff's device, JIT, Nostradamus distributor | http://www.emulators.com/docs/nx25_nostradamus.htm |
+| Switch case vs Table vs Function caching/dynarec | http://ngemu.com/threads/switch-case-vs-function-table.137562/ |
+| Dynamic recompilation introduction | http://ngemu.com/threads/dynamic-recompilation-an-introduction.20491/ |
+| Dynamic recompilation guide with Chip8| https://github.com/marco9999/Dynarec_Guide/blob/master/Introduction%20to%20Dynamic%20Recompilation%20in%20Emulation.pdf |
+| Dynamic recompilation - accompanying source code | https://github.com/marco9999/Super8_jitcore/ |
+| Jump tables vs Switch | http://www.cipht.net/2017/10/03/are-jump-tables-always-fastest.html |
+| Paper: branch prediction and the performance of Interpreters - Don't trust the folklore | https://hal.inria.fr/hal-01100647/document|
