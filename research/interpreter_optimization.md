@@ -15,3 +15,5 @@
 | Presentation: Interpretation (basic indirect and direct threaded) vs binary translation | http://www.ittc.ku.edu/~kulkarni/teaching/EECS768/slides/chapter2.pdf |
 | Threaded interpretation vs Dynarec | http://www.emutalk.net/threads/55275-Threaded-interpretation-vs-Dynamic-Binary-Translation |
 | Dynamic recompilation wiki | http://emulation.gametechwiki.com/index.php/Dynamic_recompilation |
+| Paper by author of ANTLR: The Structure and Performance of Efficient Interpreters | https://www.jilp.org/vol5/v5paper12.pdf |
+| Paper by author of ANTLR introducing dynamic replication: Optimizing Indirect Branch Prediction Accuracy in Virtual Machine Interpreter | https://www.scss.tcd.ie/David.Gregg/papers/toplas05.pdf |
