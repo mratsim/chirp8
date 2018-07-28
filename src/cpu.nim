@@ -8,8 +8,12 @@ type
 
   WordBytes = object
     ## Word size is 16-bit.
-    ## Order is big endian
-    lo, hi: byte
+    ## Order is big endian in Chip-8 programs
+    ## WordBytes however stores data in native endianness
+    when cpuEndian == littleEndian:
+      lo, hi: byte
+    else:
+      hi, lo: byte
 
   Opcode {.union.} = object
     ## Raw 16-bit opcode
